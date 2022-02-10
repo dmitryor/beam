@@ -682,6 +682,8 @@ public class KafkaIO {
     @Pure
     abstract @Nullable SerializableFunction<TopicPartition, Boolean> getCheckStopReadingFn();
 
+    abstract @Nullable Duration getArtificialExtraPollLatency();
+
     abstract Builder<K, V> toBuilder();
 
     @AutoValue.Builder
@@ -728,6 +730,8 @@ public class KafkaIO {
 
       abstract Builder<K, V> setCheckStopReadingFn(
           SerializableFunction<TopicPartition, Boolean> checkStopReadingFn);
+
+      abstract Builder<K, V> setArtificialExtraPollLatency(Duration value);
 
       abstract Read<K, V> build();
 
@@ -792,6 +796,8 @@ public class KafkaIO {
         // We can expose dynamic read to external build when ReadFromKafkaDoFn is the default
         // implementation.
         builder.setDynamicRead(false);
+
+        builder.setArtificialExtraPollLatency(config.artificialExtraPollLatency);
       }
 
       private static <T> Coder<T> resolveCoder(Class<Deserializer<T>> deserializer) {
@@ -855,6 +861,7 @@ public class KafkaIO {
         private Long maxReadTime;
         private Boolean commitOffsetInFinalize;
         private String timestampPolicy;
+        private Duration artificialExtraPollLatency;
 
         public void setConsumerConfig(Map<String, String> consumerConfig) {
           this.consumerConfig = consumerConfig;
@@ -894,6 +901,10 @@ public class KafkaIO {
 
         public void setTimestampPolicy(String timestampPolicy) {
           this.timestampPolicy = timestampPolicy;
+        }
+
+        public void setArtificialExtraPollLatency(Duration value) {
+          artificialExtraPollLatency = value;
         }
       }
     }
@@ -1253,6 +1264,10 @@ public class KafkaIO {
     public Read<K, V> withCheckStopReadingFn(
         SerializableFunction<TopicPartition, Boolean> checkStopReadingFn) {
       return toBuilder().setCheckStopReadingFn(checkStopReadingFn).build();
+    }
+
+    public Read<K, V> withArtificialExtraPollLatency(Duration value) {
+      return toBuilder().setArtificialExtraPollLatency(value).build();
     }
 
     /** Returns a {@link PTransform} for PCollection of {@link KV}, dropping Kafka metatdata. */
